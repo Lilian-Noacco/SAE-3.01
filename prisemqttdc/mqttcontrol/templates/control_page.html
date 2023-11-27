@@ -1,0 +1,127 @@
+<!-- mqttcontrol/templates/control_page.html -->
+{% extends 'main.html' %}
+{% block title %}
+Accueil
+
+{% endblock %}
+
+{% block bandeau %}
+<nav class="navbar  sticky-top navbar-expand-lg navbar-dark bg-dark p-3">
+	    <div class="container-fluid">
+	      <a class="navbar-brand" href="#">Accueil</a>
+                    <div class=" collapse navbar-collapse" id="navbarNavDropdown">
+	        <ul class="navbar-nav ms-auto ">
+				<li class="nav-item">
+				<a class="nav-link mx-2" href="/admin/">Administration</a>
+                </li>
+				<li class="nav-item">
+				<a class="nav-link mx-2" href="{% url 'login' %}">Se connecter</a>
+                </li>
+				<li class="nav-item">
+	            <a class="nav-link mx-2" href="{% url 'logout' %}">Déconnexion</a>
+	          </li>
+	        </ul>
+	      </div>
+	    </div>
+	    </nav>
+{% endblock %}
+
+{% block content %}
+<h1>Contrôle des prises</h1>
+{% for power_outlet in prises %}
+    <button {% if power_outlet.ledstate == 'on' %} class="btn btn-success" {% else %}class="btn btn-danger"{% endif %} id="toggle-btn-{{ power_outlet.device }}" data-device="{{ power_outlet.device }}" data-ledstate="{{ power_outlet.ledstate }}" onclick="togglePower(this)">
+        {{ power_outlet.device }} - {{ power_outlet.ledstate }} - {% if power_outlet.ledstate == "on" %}Éteindre{% else %}Allumer{% endif %}
+    </button>
+{% endfor %}
+<button class="btn btn-primary" id="toggle-all-btn" onclick="toggleAll()">Toggle All</button>
+
+<script>
+function toggleAll() {
+    const allPrises = $('[id^="toggle-btn-"]'); // Sélectionne tous les boutons dont l'ID commence par "toggle-btn-"
+
+    allPrises.each(function(index, button) {
+        const deviceName = $(button).data('device');
+        const currentLedState = $(button).data('ledstate');
+
+        // Construire la commande en fonction de l'état actuel de la prise
+        const message = {
+            "deviceupdate": deviceName,
+            "ledState": currentLedState === "on" ? "off" : "on"
+        };
+
+        // Envoyer la commande à la prise via une requête AJAX
+        $.ajax({
+            url: '/mqttcontrol/send-command/',
+            method: 'POST',
+            data: JSON.stringify(message),
+            contentType: 'application/json',
+            success: function() {
+                // Rafraîchir la page pour mettre à jour l'état des boutons
+                location.reload();
+            },
+            error: function() {
+                console.error('Erreur lors de l\'envoi de la commande à la prise.');
+            }
+        });
+    });
+}
+
+function togglePower(button) {
+    const deviceName = $(button).data('device');
+    const currentLedState = $(button).data('ledstate');
+    console.log('Device:', deviceName);
+    console.log('Current LED State:', currentLedState);
+
+    // Code pour envoyer la commande à la prise
+    const message = {
+        "deviceupdate": deviceName,
+        "ledState": currentLedState === "on" ? "off" : "on"
+    };
+
+    $.ajax({
+        url: '/mqttcontrol/send-command/',
+        method: 'POST',
+        data: JSON.stringify(message),
+        contentType: 'application/json',
+        success: function() {
+            // Rafraîchir la page pour mettre à jour l'état des boutons
+            location.reload();
+        },
+        error: function() {
+            console.error('Erreur lors de l\'envoi de la commande à la prise.');
+        }
+    });
+}
+
+// Fonction pour rafraîchir les états des boutons
+function refreshButtonStates() {
+    // Code pour récupérer les nouveaux états des boutons depuis le serveur Django
+    // et mettre à jour les boutons en conséquence
+
+    // Utilisez une requête Ajax pour récupérer les nouveaux états
+    // et mettez à jour les boutons en conséquence
+$.ajax({
+    url: '/mqttcontrol/get-button-states/',
+    method: 'GET',
+    dataType: 'json',
+    success: function(data) {
+        // Mettez à jour les boutons sur la page
+        data.forEach(function(item) {
+            const buttonId = '#toggle-btn-' + item.device;
+            const buttonText = item.device + ' - ' + item.ledState + ' - ' + (item.ledState == 'on' ? 'Éteindre' : 'Allumer');
+
+            // Mise à jour du texte et de l'attribut data-ledstate du bouton
+            $(buttonId).text(buttonText);
+            $(buttonId).data('ledstate', item.ledState);
+        });
+    },
+    error: function() {
+        console.error('Erreur lors de la récupération des états des boutons.');
+    }
+});
+}
+
+// Rafraîchissez les états des boutons toutes les 1000 millisecondes (1 seconde)
+setInterval(refreshButtonStates, 1000);
+</script>
+{% endblock %}

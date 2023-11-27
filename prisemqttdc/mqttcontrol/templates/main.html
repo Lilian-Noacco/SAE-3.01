@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <meta charset="UTF-8">
+        {% load static %}
+    <link rel="stylesheet" href="{% static 'style/background.css' %}">
+
+        {% load bootstrap5 %}
+        {% bootstrap_css %}
+        {% bootstrap_javascript %}
+
+    <title>{% block title %}
+    Main
+    {% endblock %}
+        </title>
+
+    <link rel="shortcut icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
+</head>
+<body style="background: url('{% static 'images/background.jpg' %}') no-repeat center center fixed">
+    <div class="container">
+
+    {% block bandeau %}
+    {% endblock %}
+
+    {% block content %}
+    {% endblock %}
+
+
+    </div>
+</body>
+
+</html>
